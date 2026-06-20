@@ -121,14 +121,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               boxShadow: [
                                 BoxShadow(
                                   color: isSelected
-                                      ? primaryColor.withOpacity(0.4)
-                                      : Colors.black.withOpacity(0.2),
+                                      ? primaryColor.withValues(alpha: 0.4)
+                                      : Colors.black.withValues(alpha: 0.2),
                                   blurRadius: isSelected ? 12 : 6,
                                   offset: const Offset(0, 3),
                                 ),
                               ],
                               border: Border.all(
-                                color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
                                 width: isSelected ? 2 : 1,
                               ),
                             ),
@@ -140,7 +140,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   child: Icon(
                                     icon,
                                     size: 64,
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.white.withValues(alpha: 0.15),
                                   ),
                                 ),
                                 Padding(
@@ -196,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         elevation: 8,
-                        shadowColor: primaryColor.withOpacity(0.5),
+                        shadowColor: primaryColor.withValues(alpha: 0.5),
                       ),
                       onPressed: _completeOnboarding,
                       child: Row(

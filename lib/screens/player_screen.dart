@@ -160,7 +160,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       backgroundColor: Colors.transparent,
       body: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.92),
+          color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.92),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SafeArea(
@@ -296,18 +296,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 color: Colors.grey.shade900,
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withOpacity(0.25),
+                    color: accentColor.withValues(alpha: 0.25),
                     blurRadius: 36,
                     spreadRadius: 2,
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   width: 6,
                 ),
               ),
@@ -318,7 +318,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Theme.of(context).scaffoldBackgroundColor,
-                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 3),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 3),
                   ),
                   child: const Center(
                     child: Icon(Icons.music_note_rounded, color: Colors.grey, size: 36),
@@ -422,7 +422,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withOpacity(0.4),
+                    color: accentColor.withValues(alpha: 0.4),
                     blurRadius: 16,
                   ),
                 ],
@@ -528,7 +528,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               style: TextStyle(
                 fontSize: isActive ? 20 : 16,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? Colors.white : Colors.white.withOpacity(0.35),
+                color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.35),
                 letterSpacing: 0.2,
                 height: 1.4,
               ),
@@ -587,7 +587,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: isCurrent ? accentColor.withOpacity(0.15) : Colors.grey.shade800,
+                    color: isCurrent ? accentColor.withValues(alpha: 0.15) : Colors.grey.shade800,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(
@@ -736,7 +736,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             child: LinearProgressIndicator(
               value: value,
               minHeight: 6,
-              backgroundColor: accentColor.withOpacity(0.08),
+              backgroundColor: accentColor.withValues(alpha: 0.08),
               valueColor: AlwaysStoppedAnimation<Color>(accentColor),
             ),
           ),

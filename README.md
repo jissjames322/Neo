@@ -46,7 +46,7 @@ Neo is a distraction-free, privacy-first audio streaming and local playback appl
 * **Framework**: [Flutter](https://flutter.dev/) (Windows Desktop, Android, iOS, macOS, Web)
 * **State Management**: [Riverpod (v3)](https://riverpod.dev/)
 * **Audio Engine**: [Just Audio](https://pub.dev/packages/just_audio)
-* **YouTube Engine**: [YouTube Explode](https://pub.dev/packages/youtube_explode_dart)
+* **YouTube Engine**: Native Verome-API port (replaced youtube_explode_dart)
 * **Database**: [SQLite](https://pub.dev/packages/sqflite)
 * **Routing**: [GoRouter](https://pub.dev/packages/go_router)
 * **Storage**: [SharedPreferences](https://pub.dev/packages/shared_preferences)

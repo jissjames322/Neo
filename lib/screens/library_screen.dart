@@ -373,7 +373,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> with SingleTicker
                   } else if (val.startsWith('add_to_')) {
                     final playlistId = val.replaceFirst('add_to_', '');
                     await DbHelper.instance.addSongToPlaylist(playlistId, song.id);
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Added song to playlist")),
                       );
@@ -435,7 +435,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> with SingleTicker
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(Icons.playlist_play_rounded, color: Theme.of(context).colorScheme.primary),
@@ -506,6 +506,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> with SingleTicker
                 Expanded(
                   child: ReorderableListView.builder(
                     itemCount: songs.length,
+                    // ignore: deprecated_member_use
                     onReorder: (oldIdx, newIdx) async {
                       if (newIdx > oldIdx) newIdx -= 1;
                       final item = songs.removeAt(oldIdx);

@@ -23,10 +23,10 @@ class BottomPlayerBar extends ConsumerWidget {
       height: 96,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.95),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.95),
         border: Border(
           top: BorderSide(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -52,7 +52,7 @@ class BottomPlayerBar extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -132,7 +132,7 @@ class BottomPlayerBar extends ConsumerWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: accentColor.withOpacity(0.3),
+                            color: accentColor.withValues(alpha: 0.3),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),

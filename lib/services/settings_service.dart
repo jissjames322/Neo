@@ -69,7 +69,7 @@ class SettingsService {
 
   Future<void> setCustomColor(String key, Color color) async {
     final p = await prefs;
-    await p.setInt('custom_color_$key', color.value);
+    await p.setInt('custom_color_$key', color.toARGB32());
   }
 
   // --- Audio Settings ---

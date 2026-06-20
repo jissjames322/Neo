@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../services/verome/streaming.dart';
@@ -70,6 +69,7 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
   final DbHelper _db = DbHelper.instance;
   final SettingsService _settings = SettingsService.instance;
 
+  // ignore: deprecated_member_use
   ConcatenatingAudioSource? _playlistSource;
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
@@ -228,6 +228,7 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
       }
     }).toList();
 
+    // ignore: deprecated_member_use
     _playlistSource = ConcatenatingAudioSource(children: sources);
     await _player.setAudioSource(_playlistSource!, initialIndex: initialIndex);
     await _player.play();

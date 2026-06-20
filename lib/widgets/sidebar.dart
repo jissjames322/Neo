@@ -16,7 +16,7 @@ class Sidebar extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor.withBlue(20), // Darker sidebar
         border: Border(
           right: BorderSide(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -82,7 +82,7 @@ class Sidebar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.shield_outlined, size: 16, color: activeColor.withOpacity(0.7)),
+                    Icon(Icons.shield_outlined, size: 16, color: activeColor.withValues(alpha: 0.7)),
                     const SizedBox(width: 8),
                     Text(
                       "Privacy Secured",
@@ -130,7 +130,7 @@ class _SidebarItem extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? activeColor.withOpacity(0.08) : Colors.transparent,
+            color: isSelected ? activeColor.withValues(alpha: 0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -216,7 +216,7 @@ class _SidebarWaveLogoState extends State<_SidebarWaveLogo>
                   borderRadius: BorderRadius.circular(1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: activeColor.withOpacity(0.3),
+                      color: activeColor.withValues(alpha: 0.3),
                       blurRadius: 4,
                       spreadRadius: 0.5,
                     ),

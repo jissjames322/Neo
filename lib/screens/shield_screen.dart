@@ -139,23 +139,23 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: _isShieldEnabled
-                            ? [accentColor.withOpacity(0.15), cardColor]
-                            : [Colors.redAccent.withOpacity(0.1), cardColor],
+                            ? [accentColor.withValues(alpha: 0.15), cardColor]
+                            : [Colors.redAccent.withValues(alpha: 0.1), cardColor],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _isShieldEnabled
-                            ? accentColor.withOpacity(0.2 + 0.15 * _pulseController.value)
-                            : Colors.redAccent.withOpacity(0.2),
+                            ? accentColor.withValues(alpha: 0.2 + 0.15 * _pulseController.value)
+                            : Colors.redAccent.withValues(alpha: 0.2),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: _isShieldEnabled
-                              ? accentColor.withOpacity(0.05 + 0.05 * _pulseController.value)
-                              : Colors.redAccent.withOpacity(0.05),
+                              ? accentColor.withValues(alpha: 0.05 + 0.05 * _pulseController.value)
+                              : Colors.redAccent.withValues(alpha: 0.05),
                           blurRadius: 16,
                           spreadRadius: 1,
                         ),
@@ -167,8 +167,8 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _isShieldEnabled
-                                ? accentColor.withOpacity(0.1)
-                                : Colors.redAccent.withOpacity(0.1),
+                                ? accentColor.withValues(alpha: 0.1)
+                                : Colors.redAccent.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -205,7 +205,7 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                         ),
                         Switch(
                           value: _isShieldEnabled,
-                          activeColor: accentColor,
+                          activeThumbColor: accentColor,
                           onChanged: _toggleShield,
                         ),
                       ],
@@ -249,7 +249,7 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.04)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
                 ),
                 child: Row(
                   children: [
@@ -324,9 +324,9 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
 
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.04)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -334,7 +334,7 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                   itemCount: _blockedLogs.length,
                   separatorBuilder: (context, index) => Divider(
                     height: 1,
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                   ),
                   itemBuilder: (context, index) {
                     final log = _blockedLogs[index];
@@ -386,8 +386,8 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: _isShieldEnabled
-                                  ? accentColor.withOpacity(0.1)
-                                  : Colors.grey.withOpacity(0.1),
+                                  ? accentColor.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -425,7 +425,7 @@ class _ShieldScreenState extends ConsumerState<ShieldScreen> with SingleTickerPr
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

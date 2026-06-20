@@ -68,10 +68,9 @@ class AppTheme {
       scaffoldBackgroundColor: bg,
       cardColor: card,
       colorScheme: ColorScheme.dark(
-        background: bg,
         surface: card,
         primary: accent,
-        secondary: accent.withOpacity(0.8),
+        secondary: accent.withValues(alpha: 0.8),
       ),
       useMaterial3: true,
     );
@@ -89,15 +88,15 @@ class AppTheme {
       ),
       sliderTheme: base.sliderTheme.copyWith(
         activeTrackColor: accent,
-        inactiveTrackColor: accent.withOpacity(0.24),
+        inactiveTrackColor: accent.withValues(alpha: 0.24),
         thumbColor: accent,
-        overlayColor: accent.withOpacity(0.12),
+        overlayColor: accent.withValues(alpha: 0.12),
       ),
       listTileTheme: base.listTileTheme.copyWith(
         iconColor: Colors.grey,
         textColor: Colors.white,
         selectedColor: accent,
-        selectedTileColor: accent.withOpacity(0.1),
+        selectedTileColor: accent.withValues(alpha: 0.1),
       ),
     );
   }

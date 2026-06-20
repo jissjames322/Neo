@@ -50,16 +50,16 @@ class _SongCardState extends ConsumerState<SongCard> {
             boxShadow: [
               BoxShadow(
                 color: _isHovered
-                    ? Colors.black.withOpacity(0.4)
-                    : Colors.black.withOpacity(0.2),
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : Colors.black.withValues(alpha: 0.2),
                 blurRadius: _isHovered ? 12 : 6,
                 offset: const Offset(0, 4),
               ),
             ],
             border: Border.all(
               color: isPlayingThis
-                  ? accentColor.withOpacity(0.5)
-                  : Colors.white.withOpacity(0.04),
+                  ? accentColor.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.04),
               width: 1.5,
             ),
           ),
@@ -110,7 +110,7 @@ class _SongCardState extends ConsumerState<SongCard> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: accentColor.withOpacity(0.4),
+                                  color: accentColor.withValues(alpha: 0.4),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),

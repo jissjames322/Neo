@@ -192,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Wrap(
                         spacing: 8,
                         children: _colorPresetAccent.map((color) {
-                          final isSelected = themeState.customAccent.value == color.value;
+                          final isSelected = themeState.customAccent.toARGB32() == color.toARGB32();
                           return GestureDetector(
                             onTap: () => ref.read(themeProvider.notifier).setCustomColors(accent: color),
                             child: CircleAvatar(
@@ -212,7 +212,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Wrap(
                         spacing: 8,
                         children: _colorPresetBg.map((color) {
-                          final isSelected = themeState.customBg.value == color.value;
+                          final isSelected = themeState.customBg.toARGB32() == color.toARGB32();
                           return GestureDetector(
                             onTap: () => ref.read(themeProvider.notifier).setCustomColors(bg: color),
                             child: CircleAvatar(
@@ -355,7 +355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.withOpacity(0.12),
+                        backgroundColor: Colors.red.withValues(alpha: 0.12),
                         foregroundColor: Colors.redAccent,
                         elevation: 0,
                         minimumSize: const Size(double.infinity, 44),
@@ -400,7 +400,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.03)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.03)),
       ),
       child: child,
     );
@@ -419,7 +419,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
       ),
       selectedColor: primaryColor,
-      backgroundColor: Colors.white.withOpacity(0.06),
+      backgroundColor: Colors.white.withValues(alpha: 0.06),
       checkmarkColor: Colors.black,
     );
   }
