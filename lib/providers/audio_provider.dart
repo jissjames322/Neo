@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../services/verome/streaming.dart';
 import '../models/song.dart';
 import '../services/db_helper.dart';
 import '../services/settings_service.dart';
@@ -174,30 +174,22 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     if (song.sourceType != 'stream') return song.filePath;
     if (song.filePath.contains('googlevideo.com')) return song.filePath;
 
-    // Bypass YouTube Explode for seed songs (e.g., SoundHelix URLs or local mock IDs)
-    if (song.id.startsWith('sh') ||
-        song.id.startsWith('online_') ||
-        song.filePath.contains('soundhelix.com') ||
-        !RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(song.id)) {
-      return song.filePath;
-    }
-
-    final yt = YoutubeExplode();
-    try {
+    // Resolve our custom schema
+    if (song.filePath.startsWith('youtube://')) {
       final isShield = await _settings.isShieldEnabled();
       if (isShield) {
         await _settings.incrementShieldBlockedCount(12);
         await _settings.incrementShieldDataSavedMb(4.5);
       }
-      final manifest = await yt.videos.streamsClient.getManifest(song.id);
-      final audioStreamInfo = manifest.audioOnly.withHighestBitrate();
-      return audioStreamInfo.url.toString();
-    } catch (e) {
-      debugPrint("Error resolving YouTube stream URL for song ${song.title}: $e");
+      
+      final bestUrl = await StreamingService.getBestStreamUrl(song.id);
+      if (bestUrl != null) {
+        return bestUrl;
+      }
       return song.filePath; // fallback
-    } finally {
-      yt.close();
     }
+
+    return song.filePath;
   }
 
   Future<void> playQueue(List<Song> songs, {int initialIndex = 0}) async {

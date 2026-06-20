@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../models/song.dart';
 import '../services/settings_service.dart';
+import 'verome/ytmusic.dart';
 
 class ApiService {
   static final ApiService instance = ApiService._init();
@@ -9,10 +9,9 @@ class ApiService {
 
   Future<List<Song>> searchSongs(String query) async {
     final List<Song> results = [];
-    final yt = YoutubeExplode();
 
     try {
-      final searchList = await yt.search.search(query);
+      final searchList = await VeromeYtMusic.search(query, filter: "songs");
 
       // Increment Privacy Shield blocked requests and data saved
       final isShield = await SettingsService.instance.isShieldEnabled();
@@ -22,33 +21,44 @@ class ApiService {
       }
 
       int count = 0;
-      for (final video in searchList) {
+      for (final item in searchList) {
         if (count >= 15) break;
+        if (item.videoId == null) continue;
+        
         count++;
 
-        final videoId = video.id.value;
-        final title = video.title;
-        final artist = video.author;
-        final durationMs = video.duration?.inMilliseconds ?? 240000;
+        final videoId = item.videoId!;
+        final title = item.title ?? "Unknown Title";
+        
+        String artist = "Unknown Artist";
+        if (item.artists.isNotEmpty) {
+          artist = item.artists.map((a) => a['name']).join(', ');
+        }
 
-        final helixIndex = (count % 10) + 1;
-        final placeholderUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-$helixIndex.mp3";
+        // Parse duration like "3:45" to ms
+        int durationMs = 240000;
+        if (item.duration != null && item.duration!.contains(":")) {
+          final parts = item.duration!.split(":");
+          if (parts.length == 2) {
+            durationMs = ((int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0)) * 1000;
+          } else if (parts.length == 3) {
+            durationMs = ((int.tryParse(parts[0]) ?? 0) * 3600 + (int.tryParse(parts[1]) ?? 0) * 60 + (int.tryParse(parts[2]) ?? 0)) * 1000;
+          }
+        }
 
         results.add(Song(
           id: videoId,
           title: title,
           artist: artist,
-          album: "YouTube Video",
-          filePath: placeholderUrl,
+          album: "YouTube Music",
+          filePath: "youtube://$videoId",
           durationMs: durationMs,
           genre: "YouTube",
           sourceType: 'stream',
         ));
       }
     } catch (e) {
-      debugPrint("Error searching YouTube: $e");
-    } finally {
-      yt.close();
+      debugPrint("Error searching YT Music: $e");
     }
 
     return results;
