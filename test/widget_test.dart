@@ -1,30 +1,31 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:neo/main.dart';
+import 'package:neo/models/song.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Song Model Tests', () {
+    test('Song serialization and deserialization should match', () {
+      final song = Song(
+        id: 'test_song',
+        title: 'Cyberpunk Breeze',
+        artist: 'Lofi Pulse',
+        filePath: 'https://example.com/stream.mp3',
+        durationMs: 180000,
+        sourceType: 'stream',
+        isFavorite: true,
+      );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      final map = song.toMap();
+      expect(map['id'], 'test_song');
+      expect(map['isFavorite'], 1);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      final decoded = Song.fromMap(map);
+      expect(decoded.id, 'test_song');
+      expect(decoded.title, 'Cyberpunk Breeze');
+      expect(decoded.artist, 'Lofi Pulse');
+      expect(decoded.filePath, 'https://example.com/stream.mp3');
+      expect(decoded.durationMs, 180000);
+      expect(decoded.sourceType, 'stream');
+      expect(decoded.isFavorite, true);
+    });
   });
 }
