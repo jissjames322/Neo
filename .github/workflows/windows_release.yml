@@ -96,7 +96,7 @@ jobs:
       - name: Create GitHub Release and Upload Artifact
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/windows/neo-windows-release.zip"
+          artifacts: "build/windows/neo-windows-release.zip,build/windows/x64/runner/Release/*.exe"
           tag: ${{ steps.release_meta.outputs.tag_name }}
           name: ${{ steps.release_meta.outputs.release_title }}
           prerelease: ${{ steps.release_meta.outputs.is_prerelease }}
