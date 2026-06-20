@@ -1,0 +1,100 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build & Release Windows App
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Retrieve all tags and history for version calculation
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run static analysis
+        run: flutter analyze
+
+      - name: Run unit tests
+        run: flutter test
+
+      - name: Calculate next version and check commit intent
+        id: release_meta
+        shell: bash
+        run: |
+          # Fetch all git tags
+          git fetch --tags
+          
+          # Find the latest tag matching v*.*, default to v1.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
+          echo "Latest tag found: $LATEST_TAG"
+          
+          # Strip the 'v' prefix
+          VERSION=${LATEST_TAG#v}
+          
+          # Split major and minor parts
+          IFS='.' read -r -a PARTS <<< "$VERSION"
+          MAJOR=${PARTS[0]:-1}
+          MINOR=${PARTS[1]:-0}
+          
+          # Increment minor version
+          MINOR=$((MINOR + 1))
+          NEXT_VERSION="v${MAJOR}.${MINOR}"
+          echo "Base next version: $NEXT_VERSION"
+          
+          # Inspect commit message for demo/prerelease keywords
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          echo "Commit Message: $COMMIT_MSG"
+          
+          IS_DEMO=false
+          IS_PRERELEASE=false
+          TAG_SUFFIX=""
+          RELEASE_TITLE="Release ${NEXT_VERSION}"
+          
+          if echo "$COMMIT_MSG" | grep -iq "demo"; then
+            IS_DEMO=true
+            TAG_SUFFIX="-demo"
+            RELEASE_TITLE="[Demo] Release ${NEXT_VERSION}"
+          fi
+          
+          if echo "$COMMIT_MSG" | grep -iq "prerelease"; then
+            IS_PRERELEASE=true
+            RELEASE_TITLE="[Prerelease] Release ${NEXT_VERSION}"
+          fi
+          
+          FINAL_TAG="${NEXT_VERSION}${TAG_SUFFIX}"
+          echo "Final tag name: $FINAL_TAG"
+          
+          # Set outputs
+          echo "tag_name=${FINAL_TAG}" >> $GITHUB_OUTPUT
+          echo "release_title=${RELEASE_TITLE}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
+
+      - name: Build Windows application
+        run: flutter build windows --release
+
+      - name: Package Windows release zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\neo-windows-release.zip
+
+      - name: Create GitHub Release and Upload Artifact
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/windows/neo-windows-release.zip"
+          tag: ${{ steps.release_meta.outputs.tag_name }}
+          name: ${{ steps.release_meta.outputs.release_title }}
+          prerelease: ${{ steps.release_meta.outputs.is_prerelease }}
+          token: ${{ secrets.TOKEN }}

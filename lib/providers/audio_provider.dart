@@ -136,7 +136,10 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
         var currentSong = state.queue[index];
 
         // If it's a stream song and not yet resolved to a direct stream URL, resolve it now
-        if (currentSong.sourceType == 'stream' && !currentSong.filePath.contains('googlevideo.com')) {
+        if (currentSong.sourceType == 'stream' &&
+            !currentSong.filePath.contains('googlevideo.com') &&
+            !currentSong.filePath.contains('soundhelix.com') &&
+            !currentSong.id.startsWith('sh')) {
           state = state.copyWith(isBuffering: true);
           final resolvedUrl = await _resolveSongStreamUrl(currentSong);
           currentSong = currentSong.copyWith(filePath: resolvedUrl);
@@ -171,6 +174,14 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     if (song.sourceType != 'stream') return song.filePath;
     if (song.filePath.contains('googlevideo.com')) return song.filePath;
 
+    // Bypass YouTube Explode for seed songs (e.g., SoundHelix URLs or local mock IDs)
+    if (song.id.startsWith('sh') ||
+        song.id.startsWith('online_') ||
+        song.filePath.contains('soundhelix.com') ||
+        !RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(song.id)) {
+      return song.filePath;
+    }
+
     final yt = YoutubeExplode();
     try {
       final isShield = await _settings.isShieldEnabled();
@@ -196,7 +207,10 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     var initialSong = songs[initialIndex];
 
     // Pre-resolve initial song to prevent double-buffering / double-loading
-    if (initialSong.sourceType == 'stream' && !initialSong.filePath.contains('googlevideo.com')) {
+    if (initialSong.sourceType == 'stream' &&
+        !initialSong.filePath.contains('googlevideo.com') &&
+        !initialSong.filePath.contains('soundhelix.com') &&
+        !initialSong.id.startsWith('sh')) {
       state = state.copyWith(
         queue: songs,
         currentIndex: initialIndex,
