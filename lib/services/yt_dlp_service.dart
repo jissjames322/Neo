@@ -171,9 +171,31 @@ class YtDlpService {
           if (id != null) {
             final url = await getStreamUrl(id);
             if (url != null) {
-              request.response.statusCode = HttpStatus.movedTemporarily;
-              request.response.headers.set('Location', url);
-              await request.response.close();
+              try {
+                final client = HttpClient();
+                final proxyRequest = await client.getUrl(Uri.parse(url));
+
+                // Forward Range headers for seeking support
+                if (request.headers.value('range') != null) {
+                  proxyRequest.headers.set('range', request.headers.value('range')!);
+                }
+
+                final proxyResponse = await proxyRequest.close();
+                request.response.statusCode = proxyResponse.statusCode;
+
+                // Forward essential headers
+                proxyResponse.headers.forEach((name, values) {
+                  for (final value in values) {
+                    request.response.headers.add(name, value);
+                  }
+                });
+
+                await proxyResponse.pipe(request.response);
+              } catch (e) {
+                debugPrint('[NEO] Proxy error: $e');
+                request.response.statusCode = HttpStatus.internalServerError;
+                await request.response.close();
+              }
               return;
             }
           }
