@@ -13,6 +13,7 @@ void main() async {
 
   // Initialize yt-dlp backend (auto-downloads binary if needed)
   await YtDlpService.instance.initialize();
+  await YtDlpService.instance.startProxyServer();
 
   runApp(
     const ProviderScope(

@@ -127,34 +127,11 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
 
     _indexSub = _player.currentIndexStream.listen((index) async {
       if (index != null && state.queue.isNotEmpty && index < state.queue.length) {
-        var currentSong = state.queue[index];
-
-        // Resolve stream URL if not yet resolved (using yt-dlp)
-        if (currentSong.sourceType == 'stream' &&
-            currentSong.filePath.startsWith('youtube://')) {
-          state = state.copyWith(isBuffering: true);
-          final resolvedUrl = await _resolveSongStreamUrl(currentSong);
-          currentSong = currentSong.copyWith(filePath: resolvedUrl);
-
-          final updatedQueue = List<Song>.from(state.queue);
-          updatedQueue[index] = currentSong;
-
-          state = state.copyWith(
-            queue: updatedQueue,
-            currentSong: currentSong,
-            currentIndex: index,
-          );
-
-          if (_playlistSource != null && index < _playlistSource!.length) {
-            await _playlistSource!.insert(index, AudioSource.uri(Uri.parse(resolvedUrl)));
-            await _playlistSource!.removeAt(index + 1);
-          }
-        } else {
-          state = state.copyWith(
-            currentIndex: index,
-            currentSong: currentSong,
-          );
-        }
+        final currentSong = state.queue[index];
+        state = state.copyWith(
+          currentIndex: index,
+          currentSong: currentSong,
+        );
         _incrementPlayCount(currentSong);
       }
     });
@@ -162,20 +139,7 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
 
   Stream<Duration> get positionStream => _player.positionStream;
 
-  /// Resolve a youtube:// URI to a real HTTPS stream URL using yt-dlp.
-  Future<String> _resolveSongStreamUrl(Song song) async {
-    if (song.sourceType != 'stream') return song.filePath;
-    if (!song.filePath.startsWith('youtube://')) return song.filePath;
-
-    final videoId = song.id;
-    final streamUrl = await YtDlpService.instance.getStreamUrl(videoId);
-
-    if (streamUrl != null && streamUrl.startsWith('https://')) {
-      return streamUrl;
-    }
-
-    return song.filePath; // fallback (will likely fail playback gracefully)
-  }
+  // Removed _resolveSongStreamUrl since we now use proxy server.
 
   Future<void> playQueue(List<Song> songs, {int initialIndex = 0}) async {
     if (songs.isEmpty) return;
@@ -183,34 +147,22 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     List<Song> updatedSongs = List<Song>.from(songs);
     var initialSong = songs[initialIndex];
 
-    // Pre-resolve the initial song to prevent double-buffering
-    if (initialSong.sourceType == 'stream' &&
-        initialSong.filePath.startsWith('youtube://')) {
-      state = state.copyWith(
-        queue: songs,
-        currentIndex: initialIndex,
-        currentSong: initialSong,
-        isBuffering: true,
-      );
-      final resolvedUrl = await _resolveSongStreamUrl(initialSong);
-      initialSong = initialSong.copyWith(filePath: resolvedUrl);
-      updatedSongs[initialIndex] = initialSong;
-    }
-
     state = state.copyWith(
       queue: updatedSongs,
       currentIndex: initialIndex,
       currentSong: initialSong,
     );
 
+    final proxyPort = YtDlpService.instance.proxyPort;
     final sources = updatedSongs.map((s) {
       if (s.sourceType == 'local') {
         return AudioSource.uri(Uri.file(s.filePath));
       } else if (s.filePath.startsWith('https://')) {
         return AudioSource.uri(Uri.parse(s.filePath));
+      } else if (s.sourceType == 'stream' && s.filePath.startsWith('youtube://')) {
+        return AudioSource.uri(Uri.parse('http://127.0.0.1:$proxyPort/stream?id=${s.id}'));
       } else {
-        // Placeholder for unresolved tracks (will resolve via index stream listener)
-        return AudioSource.uri(Uri.parse('https://www.example.com/placeholder'));
+        return AudioSource.uri(Uri.parse(s.filePath));
       }
     }).toList();
 

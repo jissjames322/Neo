@@ -113,30 +113,76 @@ class YtDlpService {
     return null;
   }
 
+  HttpServer? _proxyServer;
+  int get proxyPort => _proxyServer?.port ?? 8080;
+
   /// Run yt-dlp with given args, return stdout or null.
   /// SECURITY: Uses argument list, runInShell: false.
   Future<String?> _runYtDlp(List<String> args, {Duration timeout = const Duration(seconds: 30)}) async {
     final binary = _ytDlpPath;
     if (binary == null) return null;
 
+    Process? process;
     try {
-      final result = await Process.run(
+      process = await Process.start(
         binary,
         args,
         runInShell: false, // SECURITY: never run in shell
-        stdoutEncoding: utf8,
-        stderrEncoding: utf8,
-      ).timeout(timeout);
+      );
 
-      if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
+      final stdoutBuffer = StringBuffer();
+      final stderrBuffer = StringBuffer();
+
+      // Collect stdout and stderr
+      process.stdout.transform(utf8.decoder).listen((data) => stdoutBuffer.write(data));
+      process.stderr.transform(utf8.decoder).listen((data) => stderrBuffer.write(data));
+
+      final exitCode = await process.exitCode.timeout(
+        timeout,
+        onTimeout: () {
+          process?.kill(ProcessSignal.sigterm);
+          process?.kill(ProcessSignal.sigkill);
+          throw TimeoutException('yt-dlp process timed out');
+        },
+      );
+
+      if (exitCode == 0) {
+        return stdoutBuffer.toString().trim();
       } else {
-        debugPrint('[NEO] yt-dlp error (exit ${result.exitCode}): ${result.stderr}');
+        debugPrint('[NEO] yt-dlp error (exit $exitCode): $stderrBuffer');
       }
     } catch (e) {
       debugPrint('[NEO] yt-dlp run error: $e');
+      process?.kill(ProcessSignal.sigkill);
     }
     return null;
+  }
+
+  /// Start the local proxy server to seamlessly stream YouTube URLs.
+  Future<void> startProxyServer() async {
+    if (_proxyServer != null) return;
+    try {
+      _proxyServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      debugPrint('[NEO] Proxy server started on port ${_proxyServer!.port}');
+      _proxyServer!.listen((HttpRequest request) async {
+        if (request.uri.path == '/stream') {
+          final id = request.uri.queryParameters['id'];
+          if (id != null) {
+            final url = await getStreamUrl(id);
+            if (url != null) {
+              request.response.statusCode = HttpStatus.movedTemporarily;
+              request.response.headers.set('Location', url);
+              await request.response.close();
+              return;
+            }
+          }
+        }
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+      });
+    } catch (e) {
+      debugPrint('[NEO] Failed to start proxy server: $e');
+    }
   }
 
   /// Search YouTube for songs matching [query].
