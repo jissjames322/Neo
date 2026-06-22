@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
@@ -69,12 +70,9 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
   final DbHelper _db = DbHelper.instance;
   final SettingsService _settings = SettingsService.instance;
 
-  // ignore: deprecated_member_use
-  ConcatenatingAudioSource? _playlistSource;
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
   StreamSubscription? _durationSub;
-  StreamSubscription? _indexSub;
 
   @override
   AudioPlaybackState build() {
@@ -84,7 +82,6 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
       _playerStateSub?.cancel();
       _positionSub?.cancel();
       _durationSub?.cancel();
-      _indexSub?.cancel();
       _player.dispose();
     });
 
@@ -124,17 +121,6 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     _durationSub = _player.durationStream.listen((dur) {
       state = state.copyWith(duration: dur ?? Duration.zero);
     });
-
-    _indexSub = _player.currentIndexStream.listen((index) async {
-      if (index != null && state.queue.isNotEmpty && index < state.queue.length) {
-        final currentSong = state.queue[index];
-        state = state.copyWith(
-          currentIndex: index,
-          currentSong: currentSong,
-        );
-        _incrementPlayCount(currentSong);
-      }
-    });
   }
 
   Stream<Duration> get positionStream => _player.positionStream;
@@ -145,31 +131,76 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     if (songs.isEmpty) return;
 
     List<Song> updatedSongs = List<Song>.from(songs);
-    var initialSong = songs[initialIndex];
 
     state = state.copyWith(
       queue: updatedSongs,
-      currentIndex: initialIndex,
-      currentSong: initialSong,
     );
 
-    final proxyPort = YtDlpService.instance.proxyPort;
-    final sources = updatedSongs.map((s) {
-      if (s.sourceType == 'local') {
-        return AudioSource.uri(Uri.file(s.filePath));
-      } else if (s.filePath.startsWith('https://')) {
-        return AudioSource.uri(Uri.parse(s.filePath));
-      } else if (s.sourceType == 'stream' && s.filePath.startsWith('youtube://')) {
-        return AudioSource.uri(Uri.parse('http://127.0.0.1:$proxyPort/stream?id=${s.id}'));
-      } else {
-        return AudioSource.uri(Uri.parse(s.filePath));
-      }
-    }).toList();
+    await _playSongAtIndex(initialIndex);
+  }
 
-    // ignore: deprecated_member_use
-    _playlistSource = ConcatenatingAudioSource(children: sources);
-    await _player.setAudioSource(_playlistSource!, initialIndex: initialIndex);
-    await _player.play();
+  int _playActionId = 0;
+
+  Future<void> _playSongAtIndex(int index) async {
+    if (index < 0 || index >= state.queue.length) return;
+
+    final actionId = ++_playActionId;
+    
+    // Debounce rapid clicks
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (_playActionId != actionId) return;
+
+    final s = state.queue[index];
+    AudioSource source;
+    if (s.sourceType == 'local') {
+      source = AudioSource.uri(Uri.file(s.filePath));
+    } else if (s.filePath.startsWith('https://')) {
+      source = AudioSource.uri(Uri.parse(s.filePath));
+    } else if (s.sourceType == 'stream' && s.filePath.startsWith('youtube://')) {
+      final url = await YtDlpService.instance.getStreamUrl(s.id);
+      if (_playActionId != actionId) return;
+      if (url == null) {
+        // Fallback: skip to next if resolution failed
+        await next();
+        return;
+      }
+      source = AudioSource.uri(Uri.parse(url));
+    } else {
+      source = AudioSource.uri(Uri.parse(s.filePath));
+    }
+
+    if (_playActionId != actionId) return;
+    
+    state = state.copyWith(currentIndex: index, currentSong: s);
+    
+    try {
+      await _player.setAudioSource(source);
+      if (_playActionId != actionId) return;
+      _incrementPlayCount(s);
+      await _player.play();
+      
+      // Start background prefetch for the next songs to make playback instant
+      _prefetchNextSongs(index);
+    } catch (e) {
+      // Catch "Loading interrupted" from just_audio if aborted rapidly
+      print('[NEO] Audio play interrupted or failed: $e');
+    }
+  }
+
+  void _prefetchNextSongs(int currentIndex) {
+    if (state.queue.isEmpty) return;
+    
+    // Pre-fetch the next 2 songs
+    for (int i = 1; i <= 2; i++) {
+      int nextIndex = currentIndex + i;
+      if (nextIndex < state.queue.length) {
+        final s = state.queue[nextIndex];
+        if (s.sourceType == 'stream' && s.filePath.startsWith('youtube://')) {
+          // Fire and forget: this resolves and populates the cache
+          YtDlpService.instance.getStreamUrl(s.id);
+        }
+      }
+    }
   }
 
   Future<void> play() async {
@@ -191,17 +222,41 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
   }
 
   Future<void> next() async {
-    if (_player.hasNext) {
-      await _player.seekToNext();
+    if (state.queue.isEmpty) return;
+    int nextIndex = (state.currentIndex ?? 0) + 1;
+
+    if (state.shuffleModeEnabled) {
+      nextIndex = Random().nextInt(state.queue.length);
+    } else if (nextIndex >= state.queue.length) {
+      if (state.loopMode == LoopMode.all) {
+        nextIndex = 0;
+      } else {
+        await _player.stop();
+        return;
+      }
     }
+    await _playSongAtIndex(nextIndex);
   }
 
   Future<void> previous() async {
-    if (_player.hasPrevious) {
-      await _player.seekToPrevious();
-    } else {
+    if (state.queue.isEmpty) return;
+    if (_player.position.inSeconds > 3) {
       await _player.seek(Duration.zero);
+      return;
     }
+
+    int prevIndex = (state.currentIndex ?? 0) - 1;
+
+    if (state.shuffleModeEnabled) {
+      prevIndex = Random().nextInt(state.queue.length);
+    } else if (prevIndex < 0) {
+      if (state.loopMode == LoopMode.all) {
+        prevIndex = state.queue.length - 1;
+      } else {
+        prevIndex = 0;
+      }
+    }
+    await _playSongAtIndex(prevIndex);
   }
 
   Future<void> setVolume(double vol) async {
@@ -275,7 +330,12 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
   }
 
   Future<void> _onSongCompleted() async {
-    // Standard handler — just_audio queue handles auto-advancing.
+    if (state.loopMode == LoopMode.one) {
+      await _player.seek(Duration.zero);
+      await _player.play();
+    } else {
+      await next();
+    }
   }
 }
 

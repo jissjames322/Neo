@@ -204,7 +204,12 @@ class BottomPlayerBar extends ConsumerWidget {
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
                             ),
                             child: Slider(
-                              value: playbackState.position.inMilliseconds.toDouble(),
+                              value: playbackState.position.inMilliseconds.toDouble()
+                                  .clamp(
+                                      0.0,
+                                      playbackState.duration.inMilliseconds.toDouble() > 0
+                                          ? playbackState.duration.inMilliseconds.toDouble()
+                                          : 1.0),
                               max: playbackState.duration.inMilliseconds.toDouble() > 0
                                   ? playbackState.duration.inMilliseconds.toDouble()
                                   : 1.0,

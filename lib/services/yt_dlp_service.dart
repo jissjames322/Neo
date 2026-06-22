@@ -271,6 +271,9 @@ class YtDlpService {
     );
   }
 
+  final Map<String, _CachedUrl> _urlCache = {};
+  final Map<String, Future<String?>> _inFlightRequests = {};
+
   /// Get a direct audio stream URL for [videoId].
   /// SECURITY: videoId is validated with strict regex before use.
   /// Returns null if invalid or unavailable.
@@ -282,6 +285,32 @@ class YtDlpService {
       debugPrint('[NEO] Invalid videoId rejected: $videoId');
       return null;
     }
+
+    final cached = _urlCache[videoId];
+    if (cached != null && DateTime.now().isBefore(cached.expiresAt)) {
+      return cached.url;
+    }
+
+    if (_inFlightRequests.containsKey(videoId)) {
+      return _inFlightRequests[videoId];
+    }
+
+    final future = _fetchStreamUrl(videoId);
+    _inFlightRequests[videoId] = future;
+    
+    try {
+      final url = await future;
+      if (url != null) {
+        // Cache URL for 2 hours
+        _urlCache[videoId] = _CachedUrl(url, DateTime.now().add(const Duration(hours: 2)));
+      }
+      return url;
+    } finally {
+      _inFlightRequests.remove(videoId);
+    }
+  }
+
+  Future<String?> _fetchStreamUrl(String videoId) async {
 
     final url = 'https://www.youtube.com/watch?v=$videoId';
 
@@ -356,4 +385,10 @@ class YtDlpService {
     final appDir = await getApplicationDocumentsDirectory();
     return '${appDir.path}/Downloads';
   }
+}
+
+class _CachedUrl {
+  final String url;
+  final DateTime expiresAt;
+  _CachedUrl(this.url, this.expiresAt);
 }
