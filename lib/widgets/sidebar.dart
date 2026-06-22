@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
@@ -25,18 +26,19 @@ class Sidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                _SidebarWaveLogo(),
-                SizedBox(width: 12),
+                const _SidebarWaveLogo(),
+                const SizedBox(width: 12),
                 Text(
-                  "PULSE",
-                  style: TextStyle(
+                  'NEO',
+                  style: GoogleFonts.outfit(
                     fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 4.0,
+                    color: Colors.white,
                   ),
                 ),
               ],

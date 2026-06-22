@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
 import '../providers/audio_provider.dart';
 import '../services/api_service.dart';
+import '../services/yt_dlp_service.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Song song;
@@ -284,7 +286,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(height: 16),
-        // Rotating album artwork
+        // Rotating album artwork with thumbnail support
         Center(
           child: RotationTransition(
             turns: _artworkController,
@@ -296,9 +298,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 color: Colors.grey.shade900,
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withValues(alpha: 0.25),
-                    blurRadius: 36,
-                    spreadRadius: 2,
+                    color: accentColor.withValues(alpha: 0.3),
+                    blurRadius: 48,
+                    spreadRadius: 4,
                   ),
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.5),
@@ -311,26 +313,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   width: 6,
                 ),
               ),
-              child: Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 3),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.music_note_rounded, color: Colors.grey, size: 36),
-                  ),
-                ),
+              child: ClipOval(
+                child: song.effectiveThumbnailUrl != null
+                    ? Image.network(
+                        song.effectiveThumbnailUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, e, s) => _buildArtworkPlaceholder(accentColor),
+                      )
+                    : _buildArtworkPlaceholder(accentColor),
               ),
             ),
           ),
         ),
         const SizedBox(height: 36),
 
-        // Metadata Title / Artist & Favorite
+        // Metadata Title / Artist, Favorite & Download
         Row(
           children: [
             Expanded(
@@ -341,23 +338,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     song.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.outfit(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     song.artist,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
+                    style: GoogleFonts.outfit(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
             ),
+            // Download button (yt-dlp)
+            if (song.sourceType == 'stream' && !song.id.startsWith('sh'))
+              IconButton(
+                icon: Icon(Icons.download_rounded, color: Colors.grey.shade400, size: 24),
+                tooltip: 'Download as MP3',
+                onPressed: () => _downloadSong(context, song),
+              ),
             IconButton(
               icon: Icon(
                 song.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 color: song.isFavorite ? accentColor : Colors.grey,
-                size: 28,
+                size: 26,
               ),
               onPressed: () {
                 ref.read(audioProvider.notifier).toggleFavoriteCurrent();
@@ -647,7 +658,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    "AUDIO ANALYSIS (RECCOBEATS)",
+                    'AUDIO ANALYSIS',
                     style: TextStyle(fontWeight: FontWeight.w900, color: Colors.grey, fontSize: 12, letterSpacing: 1.5),
                   ),
                   if (snapshot.connectionState == ConnectionState.waiting)
@@ -767,6 +778,77 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final minutes = d.inMinutes;
     final seconds = d.inSeconds % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildArtworkPlaceholder(Color accentColor) {
+    return Container(
+      color: accentColor.withValues(alpha: 0.1),
+      child: Center(
+        child: Icon(
+          Icons.graphic_eq_rounded,
+          size: 56,
+          color: accentColor.withValues(alpha: 0.4),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _downloadSong(BuildContext context, Song song) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final accentColor = Theme.of(context).colorScheme.primary;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Downloading "${song.title}"...',
+              style: GoogleFonts.outfit(fontSize: 13),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 30),
+        backgroundColor: const Color(0xFF1A1D24),
+      ),
+    );
+
+    final downloadsPath = await YtDlpService.getDownloadsPath();
+    final result = await YtDlpService.instance.downloadAudio(song.id, downloadsPath);
+
+    messenger.hideCurrentSnackBar();
+
+    if (result != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Downloaded to Downloads folder ✓',
+            style: GoogleFonts.outfit(fontSize: 13),
+          ),
+          backgroundColor: Colors.green.shade800,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Download failed. Check yt-dlp is installed.',
+            style: GoogleFonts.outfit(fontSize: 13),
+          ),
+          backgroundColor: Colors.red.shade900,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }
 

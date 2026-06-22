@@ -11,6 +11,7 @@ class Song {
   final DateTime? lastPlayedAt;
   final bool isFavorite;
   final String? lyrics;
+  final String? thumbnailUrl; // YouTube thumbnail URL (not stored in DB)
 
   Song({
     required this.id,
@@ -25,7 +26,17 @@ class Song {
     this.lastPlayedAt,
     this.isFavorite = false,
     this.lyrics,
+    this.thumbnailUrl,
   });
+
+  /// Returns a YouTube thumbnail URL for stream songs, or null for local songs.
+  String? get effectiveThumbnailUrl {
+    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) return thumbnailUrl;
+    if (sourceType == 'stream' && !id.startsWith('sh')) {
+      return 'https://img.youtube.com/vi/$id/mqdefault.jpg';
+    }
+    return null;
+  }
 
   Song copyWith({
     String? id,
@@ -40,6 +51,7 @@ class Song {
     DateTime? lastPlayedAt,
     bool? isFavorite,
     String? lyrics,
+    String? thumbnailUrl,
   }) {
     return Song(
       id: id ?? this.id,
@@ -54,6 +66,7 @@ class Song {
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       isFavorite: isFavorite ?? this.isFavorite,
       lyrics: lyrics ?? this.lyrics,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 
@@ -71,6 +84,7 @@ class Song {
       'lastPlayedAt': lastPlayedAt?.toIso8601String(),
       'isFavorite': isFavorite ? 1 : 0,
       'lyrics': lyrics,
+      // thumbnailUrl is NOT stored in DB — derived at runtime from video ID
     };
   }
 
@@ -90,6 +104,7 @@ class Song {
           : null,
       isFavorite: (map['isFavorite'] as int? ?? 0) == 1,
       lyrics: map['lyrics'] as String?,
+      // thumbnailUrl derived dynamically via effectiveThumbnailUrl getter
     );
   }
 }

@@ -11,7 +11,7 @@ class DbHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('pulse_music.db');
+    _database = await _initDB('neo.db');
     return _database!;
   }
 
@@ -110,7 +110,7 @@ class DbHelper {
         'playsCount': 0,
         'lastPlayedAt': null,
         'isFavorite': 0,
-        'lyrics': '[00:02.00] Welcome to Pulse Music\n[00:06.00] Enjoy the local-first sound experience\n[00:12.00] No logins, no tracking, just you and the music\n[00:22.00] The synthwave beats keep repeating...\n[00:35.00] Feel the rhythm of the neon lights\n[00:50.00] The sound waves are rolling over you\n[01:05.00] Under the gravity of beautiful code\n[01:20.00] Pulse is your privacy-safe sanctuary\n[01:40.00] Relax and code with this soundtrack\n[02:00.00] Thank you for choosing Pulse Music'
+        'lyrics': '[00:02.00] Welcome to NEO\n[00:06.00] Your personal YouTube music player\n[00:12.00] No ads, no tracking, just you and the music\n[00:22.00] The synthwave beats keep repeating...\n[00:35.00] Feel the rhythm of the neon lights\n[00:50.00] The sound waves are rolling over you\n[01:05.00] Under the gravity of beautiful code\n[01:20.00] NEO is your privacy-safe sanctuary\n[01:40.00] Relax and code with this soundtrack\n[02:00.00] Thank you for choosing NEO'
       },
       {
         'id': 'sh2',

@@ -1,101 +1,207 @@
-# Neo Music Player 🎵
+<div align="center">
 
-> **Your Music. Your Space.**
-> A modern, premium, privacy-focused music player built with Flutter.
+<img src="https://img.shields.io/badge/NEO-YouTube%20Music%20Player-9D4EDD?style=for-the-badge&logo=youtube&logoColor=white" alt="NEO"/>
 
----
+# NEO — YouTube Music Player
 
-Neo is a distraction-free, privacy-first audio streaming and local playback application. Designed with modern dark futuristic aesthetics, glassmorphic UI components, and smooth transitions, Neo allows users to search, stream, and organize music without requiring user accounts, sign-ins, or subscriptions.
+**Stream any song from YouTube, ad-free, no API key, no sign-in.**  
+Built with Flutter · Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp) · Windows desktop app
 
----
+[![Build & Release](https://github.com/jissjames322/Neo/actions/workflows/windows_release.yml/badge.svg)](https://github.com/jissjames322/Neo/actions/workflows/windows_release.yml)
+![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)
+![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows)
+![License](https://img.shields.io/badge/License-MIT-green)
+![yt-dlp](https://img.shields.io/badge/Powered%20by-yt--dlp-FF0000?logo=youtube&logoColor=white)
 
-## 🛡️ Core Philosophy
-
-* **Privacy First**: Zero user trackers, cookies, or telemetry.
-* **No Accounts**: No mandatory login or sign-in walls.
-* **Ad-Free Streaming**: Native ad-blocking by streaming direct, clean audio feeds.
-* **Lightweight & High-Performance**: Minimal resource footprint with smooth 60 FPS animations.
+</div>
 
 ---
 
 ## ✨ Features
 
-### 🎧 Dynamic YouTube Audio Streaming
-- Search songs, artists, or albums directly on YouTube.
-- Stream high-quality audio manifest segments directly inside a native playlist queue without loading heavy web players.
-- Fully supports playback controls, lock-screen notifications, volume, speed, seeking, and queue next/previous.
-
-### 🛡️ Neo Privacy Shield & Dashboard
-- **Active Tracker Blocking**: Intercepts and blocks tracking beacons, QoS watchdogs, and third-party advertising scripts (e.g. `doubleclick.net`, `google-analytics.com`).
-- **Neo Shield Dashboard**: Visualizes blocked analytics requests and Megabytes of saved bandwidth in real time using a clean glassmorphic panel.
-- **Privacy Scoring**: View your privacy status (A+ rating) and monitor live diagnostic log streams.
-
-### 📊 Audio Analysis Panel
-- Displays metadata features including **Danceability, Energy, Valence, Acousticness, Tempo (BPM), and Loudness (dB)**.
-- **Deterministic Offline Fallback**: If a song doesn't have online metrics, Neo calculates realistic features based on song metadata to keep the visualizer functional and beautiful.
-
-### 📂 Local & Offline Library
-- Scan and import local MP3 music directories.
-- Track play history, most-played listings, favorites, and custom playlists.
-- Database synced locally using SQLite.
+| Feature | Details |
+|---------|---------|
+| 🎵 **YouTube Search & Stream** | Search any song by name — results from YouTube, streamed instantly |
+| 🚫 **Ad-Free** | yt-dlp extracts the raw audio CDN URL — ads never reach the player |
+| ⚡ **Streaming (not downloading)** | Audio plays immediately without saving a file |
+| ⬇️ **Optional Download** | Download any track as MP3 to your Downloads folder |
+| 📚 **Local Library** | SQLite-backed library for your favorite and recently played tracks |
+| 🎨 **Premium Dark UI** | Glassmorphism, Google Fonts (Outfit), animated waveforms, glow effects |
+| 🔄 **Auto yt-dlp Setup** | Downloads the yt-dlp binary automatically on first launch — no setup needed |
+| 🛡️ **Privacy First** | No login, no tracking, no hardcoded API keys, no third-party proxies |
 
 ---
 
-## 🛠️ Tech Stack
+## 🖥️ Screenshots
 
-* **Framework**: [Flutter](https://flutter.dev/) (Windows Desktop, Android, iOS, macOS, Web)
-* **State Management**: [Riverpod (v3)](https://riverpod.dev/)
-* **Audio Engine**: [Just Audio](https://pub.dev/packages/just_audio)
-* **YouTube Engine**: Native Verome-API port (replaced youtube_explode_dart)
-* **Database**: [SQLite](https://pub.dev/packages/sqflite)
-* **Routing**: [GoRouter](https://pub.dev/packages/go_router)
-* **Storage**: [SharedPreferences](https://pub.dev/packages/shared_preferences)
+> _Search YouTube, tap a song, and it streams immediately._
+
+| Home — Search | Now Playing | Library |
+|---|---|---|
+| YouTube search with live results | Rotating album art + lyrics | SQLite local library |
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Download (Windows)
 
-Ensure you have the Flutter SDK installed on your system.
+1. Go to [**Releases**](https://github.com/jissjames322/Neo/releases)
+2. Download `neo-windows-release.zip`
+3. Extract and run `neo.exe`
+4. On first launch, NEO automatically downloads `yt-dlp.exe` into its app data folder
+5. Search for a song and enjoy!
 
-```bash
-flutter --version
-```
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/jissjames322/Neo.git
-   cd Neo
-   ```
-
-2. Retrieve dependencies:
-   ```bash
-   flutter pub get
-   ```
-
-3. Run the application (Windows Desktop target):
-   ```bash
-   flutter run -d windows
-   ```
-
-4. Compile a release build:
-   ```bash
-   flutter build windows
-   ```
+> **No Python, no pip, no manual yt-dlp install required.**
 
 ---
 
-## 🤝 Contributing
+## 🏗️ Architecture
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+```
+Flutter App
+│
+├── UI Layer
+│   ├── HomeScreen      — YouTube search + local library
+│   ├── PlayerScreen    — Full-screen player with lyrics, queue, analysis
+│   ├── LibraryScreen   — SQLite-backed local library
+│   └── SettingsScreen  — Theme, EQ, playback options
+│
+├── State (Riverpod)
+│   ├── audioProvider   — Playback state (just_audio)
+│   └── themeProvider   — Theme switching
+│
+└── Services
+    ├── YtDlpService    — yt-dlp subprocess backend (search + stream + download)
+    ├── ApiService      — Facade over YtDlpService
+    ├── DbHelper        — SQLite via sqflite_common_ffi
+    └── SettingsService — SharedPreferences
+```
+
+### How yt-dlp powers NEO
+
+```
+User types "Blinding Lights"
+        │
+        ▼
+YtDlpService.searchSongs()
+  └─► yt-dlp "ytsearch10:Blinding Lights" --dump-json
+        │
+        ▼
+List of Song objects with title, artist, duration, thumbnail
+        │
+User taps a song
+        │
+        ▼
+YtDlpService.getStreamUrl(videoId)
+  └─► yt-dlp -f "bestaudio[ext=m4a]/bestaudio" --get-url VIDEO_URL
+        │
+        ▼
+Direct HTTPS CDN URL (no ads, no tracking)
+        │
+        ▼
+just_audio streams the URL → music plays!
+```
+
+---
+
+## 🔒 Security
+
+NEO was built with security as a first-class concern:
+
+| # | Issue | Fix |
+|---|-------|-----|
+| ✅ | No hardcoded API keys | yt-dlp requires no keys |
+| ✅ | No third-party proxy servers | Audio served directly from YouTube CDN |
+| ✅ | Shell injection prevention | All subprocess calls use argument lists (`runInShell: false`) |
+| ✅ | Video ID validation | Strict regex `^[a-zA-Z0-9_-]{11}$` before any subprocess call |
+| ✅ | HTTPS enforcement | Stream URLs rejected if they don't start with `https://` |
+| ✅ | No login or tracking | Fully local, no network calls except to YouTube CDN |
+
+---
+
+## 🛠️ Building from Source
+
+### Prerequisites
+- [Flutter SDK](https://flutter.dev) (stable channel, 3.x+)
+- Windows 10/11 with Visual Studio 2022 (Desktop development with C++ workload)
+
+### Steps
+
+```powershell
+git clone https://github.com/jissjames322/Neo.git
+cd Neo
+flutter pub get
+flutter run -d windows
+```
+
+To build a release binary:
+```powershell
+flutter build windows --release
+# Output: build\windows\x64\runner\Release\neo.exe
+```
+
+---
+
+## 📦 Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `just_audio` + `just_audio_media_kit` | Audio playback engine |
+| `flutter_riverpod` | State management |
+| `go_router` | Navigation |
+| `sqflite_common_ffi` | SQLite local database |
+| `google_fonts` | Outfit typeface |
+| `cached_network_image` | YouTube thumbnail caching |
+| `http` | yt-dlp binary auto-download |
+| `shared_preferences` | Settings persistence |
+
+---
+
+## 🙏 Credits & Attribution
+
+### yt-dlp
+
+This project is made possible by the incredible **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** project.
+
+> **yt-dlp** is a feature-rich command-line audio/video downloader with support for thousands of sites. It is a fork of youtube-dl with additional features and fixes.
+>
+> — [github.com/yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp)
+
+NEO uses yt-dlp as a local subprocess to:
+- Search YouTube without an API key
+- Extract direct audio stream URLs (ad-free)
+- Download tracks as MP3
+
+A huge thank you to all **yt-dlp contributors** for maintaining such a robust and well-documented tool. Please consider starring their repository: ⭐ [yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp)
+
+---
+
+### Other Open Source Projects
+
+- [Flutter](https://flutter.dev) — UI framework by Google
+- [just_audio](https://pub.dev/packages/just_audio) — Audio playback by Ryan Heise
+- [Riverpod](https://riverpod.dev) — State management by Remi Rousselet
+- [google_fonts](https://pub.dev/packages/google_fonts) — Google Fonts for Flutter
+
+---
+
+## ⚠️ Disclaimer
+
+NEO is intended for personal, non-commercial use. Streaming from YouTube is subject to [YouTube's Terms of Service](https://www.youtube.com/t/terms). This tool does not circumvent DRM or distribute copyrighted content — it only accesses freely available public streams in the same way a browser would.
+
+---
 
 ## 📄 License
 
-This project is open-source. See the repository license for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-*Developed with ❤️ by Jiss James & Neo Music Player Contributors.*
+<div align="center">
+
+Made with ❤️ and Flutter · Powered by yt-dlp
+
+**[⬇️ Download Latest Release](https://github.com/jissjames322/Neo/releases/latest)**
+
+</div>

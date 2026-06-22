@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import '../services/verome/streaming.dart';
 import '../models/song.dart';
 import '../services/db_helper.dart';
 import '../services/settings_service.dart';
+import '../services/yt_dlp_service.dart';
 import 'db_provider.dart';
 
 class AudioPlaybackState {
@@ -92,7 +92,6 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
   }
 
   Future<void> _init() async {
-    // Expose volume and speed from storage
     final storedVolume = _player.volume;
     final storedSpeed = await _settings.getPlaybackSpeed();
     await _player.setSpeed(storedSpeed);
@@ -102,7 +101,6 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
       speed: storedSpeed,
     );
 
-    // Listen to changes in player state (playing, buffering)
     _playerStateSub = _player.playerStateStream.listen((playerState) {
       final isPlaying = playerState.playing;
       final processingState = playerState.processingState;
@@ -114,32 +112,26 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
         isBuffering: isBuffering,
       );
 
-      // Handle song finish to increment play count
       if (processingState == ProcessingState.completed) {
         _onSongCompleted();
       }
     });
 
-    // Listen to position changes
     _positionSub = _player.positionStream.listen((pos) {
       state = state.copyWith(position: pos);
     });
 
-    // Listen to duration changes
     _durationSub = _player.durationStream.listen((dur) {
       state = state.copyWith(duration: dur ?? Duration.zero);
     });
 
-    // Listen to index changes to track which song is playing
     _indexSub = _player.currentIndexStream.listen((index) async {
       if (index != null && state.queue.isNotEmpty && index < state.queue.length) {
         var currentSong = state.queue[index];
 
-        // If it's a stream song and not yet resolved to a direct stream URL, resolve it now
+        // Resolve stream URL if not yet resolved (using yt-dlp)
         if (currentSong.sourceType == 'stream' &&
-            !currentSong.filePath.contains('googlevideo.com') &&
-            !currentSong.filePath.contains('soundhelix.com') &&
-            !currentSong.id.startsWith('sh')) {
+            currentSong.filePath.startsWith('youtube://')) {
           state = state.copyWith(isBuffering: true);
           final resolvedUrl = await _resolveSongStreamUrl(currentSong);
           currentSong = currentSong.copyWith(filePath: resolvedUrl);
@@ -170,26 +162,19 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
 
   Stream<Duration> get positionStream => _player.positionStream;
 
+  /// Resolve a youtube:// URI to a real HTTPS stream URL using yt-dlp.
   Future<String> _resolveSongStreamUrl(Song song) async {
     if (song.sourceType != 'stream') return song.filePath;
-    if (song.filePath.contains('googlevideo.com')) return song.filePath;
+    if (!song.filePath.startsWith('youtube://')) return song.filePath;
 
-    // Resolve our custom schema
-    if (song.filePath.startsWith('youtube://')) {
-      final isShield = await _settings.isShieldEnabled();
-      if (isShield) {
-        await _settings.incrementShieldBlockedCount(12);
-        await _settings.incrementShieldDataSavedMb(4.5);
-      }
-      
-      final bestUrl = await StreamingService.getBestStreamUrl(song.id);
-      if (bestUrl != null) {
-        return bestUrl;
-      }
-      return song.filePath; // fallback
+    final videoId = song.id;
+    final streamUrl = await YtDlpService.instance.getStreamUrl(videoId);
+
+    if (streamUrl != null && streamUrl.startsWith('https://')) {
+      return streamUrl;
     }
 
-    return song.filePath;
+    return song.filePath; // fallback (will likely fail playback gracefully)
   }
 
   Future<void> playQueue(List<Song> songs, {int initialIndex = 0}) async {
@@ -198,11 +183,9 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     List<Song> updatedSongs = List<Song>.from(songs);
     var initialSong = songs[initialIndex];
 
-    // Pre-resolve initial song to prevent double-buffering / double-loading
+    // Pre-resolve the initial song to prevent double-buffering
     if (initialSong.sourceType == 'stream' &&
-        !initialSong.filePath.contains('googlevideo.com') &&
-        !initialSong.filePath.contains('soundhelix.com') &&
-        !initialSong.id.startsWith('sh')) {
+        initialSong.filePath.startsWith('youtube://')) {
       state = state.copyWith(
         queue: songs,
         currentIndex: initialIndex,
@@ -223,8 +206,11 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
     final sources = updatedSongs.map((s) {
       if (s.sourceType == 'local') {
         return AudioSource.uri(Uri.file(s.filePath));
-      } else {
+      } else if (s.filePath.startsWith('https://')) {
         return AudioSource.uri(Uri.parse(s.filePath));
+      } else {
+        // Placeholder for unresolved tracks (will resolve via index stream listener)
+        return AudioSource.uri(Uri.parse('https://www.example.com/placeholder'));
       }
     }).toList();
 
@@ -306,15 +292,13 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
 
     final updated = song.copyWith(isFavorite: !song.isFavorite);
     await _db.insertSong(updated.toMap());
-    
-    // Update queue state and active song
+
     final updatedQueue = state.queue.map((s) => s.id == song.id ? updated : s).toList();
     state = state.copyWith(
       currentSong: updated,
       queue: updatedQueue,
     );
 
-    // Refresh database lists
     ref.read(dbSongsProvider.notifier).refreshSongs();
   }
 
@@ -335,12 +319,11 @@ class AudioNotifier extends Notifier<AudioPlaybackState> {
       'durationPlayedMs': song.durationMs,
     });
 
-    // Refresh db list
     ref.read(dbSongsProvider.notifier).refreshSongs();
   }
 
   Future<void> _onSongCompleted() async {
-    // Standard handler if needed, currently index stream and just_audio queue does auto-advancing.
+    // Standard handler — just_audio queue handles auto-advancing.
   }
 }
 

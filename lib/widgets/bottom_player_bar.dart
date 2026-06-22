@@ -44,22 +44,28 @@ class BottomPlayerBar extends ConsumerWidget {
                 children: [
                   Hero(
                     tag: 'player_artwork',
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: song.effectiveThumbnailUrl != null
+                            ? Image.network(
+                                song.effectiveThumbnailUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, e, s) => Container(
+                                  color: Colors.grey.shade800,
+                                  child: const Center(
+                                    child: Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: Colors.grey.shade800,
+                                child: Center(
+                                  child: Icon(Icons.music_note_rounded, color: accentColor, size: 28),
+                                ),
+                              ),
                       ),
                     ),
                   ),
